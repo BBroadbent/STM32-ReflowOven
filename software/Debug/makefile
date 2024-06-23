@@ -60,8 +60,8 @@ all: main-build
 main-build: Reflow\ oven.elf secondary-outputs
 
 # Tool invocations
-Reflow\ oven.elf Reflow\ oven.map: $(OBJS) $(USER_OBJS) C:\Users\benja\STM32CubeIDE\workspace_1.15.1\Reflow\ oven\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Reflow oven.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\benja\STM32CubeIDE\workspace_1.15.1\Reflow oven\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Reflow oven.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
+Reflow\ oven.elf Reflow\ oven.map: $(OBJS) $(USER_OBJS) C:\Users\benja\STM32CubeIDE\workspace_1.15.1\Reflow\ oven\software\STM32F103C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Reflow oven.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m3 -T"C:\Users\benja\STM32CubeIDE\workspace_1.15.1\Reflow oven\software\STM32F103C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Reflow oven.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -u _printf_float -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

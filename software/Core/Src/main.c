@@ -68,10 +68,14 @@ static void MX_SPI2_Init(void);
 static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
+int section_height = ILI9341_SCREEN_WIDTH/4;
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+int time_left_current_stage;
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 //	Check which timer trigered the callback
 	if (htim == &htim4) {
@@ -79,6 +83,33 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 			time_left_current_stage--;
 		}
 	}
+}
+
+void run_profile_section (struct s_profile_section profile_section, char section_title[7]) {
+	time_left_current_stage = profile_section.time;
+  ILI9341_FillScreen(BLACK);
+
+//    	  Display the title block for the preheat screen
+  char preheat_title[32];
+	ILI9341_DrawRectangle(0, 0*section_height, ILI9341_SCREEN_HEIGHT, section_height, profile_section.bg_colour);
+	sprintf(preheat_title, "%s - Target %dC", section_title, profile_section.temperature);
+	ILI9341_DrawText (preheat_title, FONT4, 20, 0*section_height+(section_height-19)/2, profile_section.txt_colour, profile_section.bg_colour);
+
+	while (time_left_current_stage > 0) {
+		char remaining_time_str[8];
+		sprintf(remaining_time_str, "%02i:%02i", (int) floor(time_left_current_stage/60), time_left_current_stage%60);
+		ILI9341_DrawText (remaining_time_str, FONT4, 80, 100, WHITE, BLACK);
+		char temp_str [32];
+		HAL_Delay(250);
+		MAX31855_Data data = MAX31855_ReadData();
+	  if (data.fault == MAX31855_NO_FAULT) {
+		  snprintf(temp_str, sizeof temp_str, "%.2f", data.temperature);
+	  } else {
+	  	snprintf(temp_str, sizeof temp_str, "Fault - %i", data.fault);
+		}
+	  ILI9341_DrawText(temp_str, FONT4, 80, 150, WHITE, BLACK);
+	}
+
 }
 /* USER CODE END 0 */
 
@@ -96,15 +127,19 @@ int main(void)
 
 	struct s_profile profile;
 	profile.preheat.temperature = 180;
-	profile.preheat.time = 120;
+	profile.preheat.time = 20;
+	profile.preheat.bg_colour = RED;
+	profile.preheat.txt_colour = WHITE;
 	profile.soak.temperature = 150;
-	profile.soak.time = 60;
+	profile.soak.time = 15;
+	profile.soak.bg_colour = ORANGE;
+	profile.soak.txt_colour = WHITE;
 	profile.reflow.temperature = 230;
-	profile.reflow.time = 120;
+	profile.reflow.time = 10;
+	profile.reflow.bg_colour = CYAN;
+	profile.reflow.txt_colour = BLACK;
 
 	bool drawn = false;
-
-	int section_height = ILI9341_SCREEN_WIDTH/4;
 
 
   /* USER CODE END 1 */
@@ -156,35 +191,35 @@ int main(void)
 //  		Show the current profile on the home screen
   		if (!drawn) {
     	  ILI9341_FillScreen(BLACK);
-				ILI9341_DrawRectangle(0, 0*section_height, ILI9341_SCREEN_HEIGHT, section_height, RED);
-				ILI9341_DrawRectangle(0, 1*section_height, ILI9341_SCREEN_HEIGHT, section_height, ORANGE);
-				ILI9341_DrawRectangle(0, 2*section_height, ILI9341_SCREEN_HEIGHT, section_height, CYAN);
+				ILI9341_DrawRectangle(0, 0*section_height, ILI9341_SCREEN_HEIGHT, section_height, profile.preheat.bg_colour);
+				ILI9341_DrawRectangle(0, 1*section_height, ILI9341_SCREEN_HEIGHT, section_height, profile.soak.bg_colour);
+				ILI9341_DrawRectangle(0, 2*section_height, ILI9341_SCREEN_HEIGHT, section_height, profile.reflow.bg_colour);
 //				Titles
-				ILI9341_DrawText ("Preheat", FONT4, 20, 0*section_height+(section_height-19)/2, WHITE, RED);
-				ILI9341_DrawText ("Soak", FONT4, 20, 1*section_height+(section_height-19)/2, WHITE, ORANGE);
-				ILI9341_DrawText ("Reflow", FONT4, 20, 2*section_height+(section_height-19)/2, BLACK, CYAN);
+				ILI9341_DrawText ("Preheat", FONT4, 20, 0*section_height+(section_height-19)/2, profile.preheat.txt_colour, profile.preheat.bg_colour);
+				ILI9341_DrawText ("Soak", FONT4, 20, 1*section_height+(section_height-19)/2, profile.soak.txt_colour, profile.soak.bg_colour);
+				ILI9341_DrawText ("Reflow", FONT4, 20, 2*section_height+(section_height-19)/2, profile.reflow.txt_colour, profile.reflow.bg_colour);
 
 //				Temps
 				char preheat_temp[5];
 				sprintf(preheat_temp, "%3dC", profile.preheat.temperature);
-				ILI9341_DrawText (preheat_temp, FONT4, 100, 0*section_height+(section_height-19)/2, WHITE, RED);
+				ILI9341_DrawText (preheat_temp, FONT4, 100, 0*section_height+(section_height-19)/2, profile.preheat.txt_colour, profile.preheat.bg_colour);
 				char soak_temp[5];
 				sprintf(soak_temp, "%3dC", profile.soak.temperature);
-				ILI9341_DrawText (soak_temp, FONT4, 100, 1*section_height+(section_height-19)/2, WHITE, ORANGE);
+				ILI9341_DrawText (soak_temp, FONT4, 100, 1*section_height+(section_height-19)/2, profile.soak.txt_colour, profile.soak.bg_colour);
 				char reflow_temp[5];
 				sprintf(reflow_temp, "%3dC", profile.reflow.temperature);
-				ILI9341_DrawText (reflow_temp, FONT4, 100, 2*section_height+(section_height-19)/2, BLACK, CYAN);
+				ILI9341_DrawText (reflow_temp, FONT4, 100, 2*section_height+(section_height-19)/2, profile.reflow.txt_colour, profile.reflow.bg_colour);
 
 //				Times
 				char preheat_time[8];
 				sprintf(preheat_time, "%02i:%02i", (int) floor(profile.preheat.time/60), profile.preheat.time%60);
-				ILI9341_DrawText (preheat_time, FONT4, 180, 0*section_height+(section_height-19)/2, WHITE, RED);
+				ILI9341_DrawText (preheat_time, FONT4, 180, 0*section_height+(section_height-19)/2, profile.preheat.txt_colour, profile.preheat.bg_colour);
 				char soak_time[8];
 				sprintf(soak_time, "%02i:%02i", (int) floor(profile.soak.time/60), profile.soak.time%60);
-				ILI9341_DrawText (soak_time, FONT4, 180, 1*section_height+(section_height-19)/2, WHITE, ORANGE);
+				ILI9341_DrawText (soak_time, FONT4, 180, 1*section_height+(section_height-19)/2, profile.soak.txt_colour, profile.soak.bg_colour);
 				char reflow_time[8];
 				sprintf(reflow_time, "%02i:%02i", (int) floor(profile.reflow.time/60), profile.reflow.time%60);
-				ILI9341_DrawText (reflow_time, FONT4, 180, 2*section_height+(section_height-19)/2, BLACK, CYAN);
+				ILI9341_DrawText (reflow_time, FONT4, 180, 2*section_height+(section_height-19)/2, profile.reflow.txt_colour, profile.reflow.bg_colour);
 
 				drawn = true;
 
@@ -195,32 +230,18 @@ int main(void)
 
   		}
   	}else if (current_state == preheat) {
-  		if (!drawn) {
-  			time_left_current_stage = profile.preheat.time;
-    	  ILI9341_FillScreen(BLACK);
+			run_profile_section(profile.preheat, "Preheat");
+			current_state = soak;
 
-//    	  Display the title block for the preheat screen
-    	  char preheat_title[32];
-				ILI9341_DrawRectangle(0, 0*section_height, ILI9341_SCREEN_HEIGHT, section_height, RED);
-				sprintf(preheat_title, "Preheat - Target %dC", profile.preheat.temperature);
-				ILI9341_DrawText (preheat_title, FONT4, 20, 0*section_height+(section_height-19)/2, WHITE, RED);
+  	} else if (current_state == soak) {
+			run_profile_section(profile.soak, "Soak");
+			current_state = reflow;
 
-				while (time_left_current_stage > 0) {
-					HAL_Delay(250);
-					char remaining_time_str[8];
-					sprintf(remaining_time_str, "%02i:%02i", (int) floor(time_left_current_stage/60), time_left_current_stage%60);
-					ILI9341_DrawText (remaining_time_str, FONT4, 80, 100, WHITE, BLACK);
-				}
+  	} else if (current_state == reflow) {
+			run_profile_section(profile.reflow, "Reflow");
+			current_state = homepage;
 
-//				Display the current temperature
-				int current_temp = 122;
-
-//				Display the countdown timer
-
-				drawn = true;
-  		}
-
-  	} else {
+  	}else {
   	  ILI9341_FillScreen(WHITE);
   	  HAL_Delay(100);
   	  char str2 [32];
@@ -228,7 +249,7 @@ int main(void)
   	  if (data.fault == MAX31855_NO_FAULT) {
   		  snprintf(str2, sizeof str2, "Int: %.2f Ext: %.2f", data.internalTemperature, data.temperature);
   	  } else {
-  	  	snprintf(str2, sizeof str2, "Fault");
+  	  	snprintf(str2, sizeof str2, "Fault - %i", data.fault);
 			}
   	  ILI9341_DrawText(str2, FONT4, 5, 110, BLACK, WHITE);
   	  HAL_Delay(500);
@@ -341,7 +362,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.Direction = SPI_DIRECTION_2LINES_RXONLY;
   hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
   hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;

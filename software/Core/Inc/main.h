@@ -73,6 +73,8 @@ enum e_state {
 struct s_profile_section {
 	int temperature;	// Degrees C
 	int time;	// Seconds
+	uint16_t bg_colour; // Colour to use for the profile section
+	uint16_t txt_colour; // Colour to use for the profile section
 };
 
 struct s_profile {
@@ -80,7 +82,6 @@ struct s_profile {
 	struct s_profile_section soak;
 	struct s_profile_section reflow;
 };
-
 
 /* USER CODE END Private defines */
 
